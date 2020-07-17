@@ -27,14 +27,13 @@ az group create --name a --location eastus2
 az deployment group create --resource-group a --template-file nat-vms-template.json --parameters prefix=a
 ```
 
-## Use Azure Bastion to SSH into each of the NAT VMs to simple iptables NAT
+## Use Azure Bastion to SSH into each of the NAT VMs to add simple iptables NAT rules
 
-[Azure assigns default gateway only to the primary NIC attached to the VM](https://docs.microsoft.com/en-us/azure/virtual-machines/windows/multiple-nics#configure-guest-os-for-multiple-nics), so need to assign a static route to the secondary NIC for it to communicate with resources outside of its subnet.
+[Azure assigns default gateway only to the primary NIC attached to the VM](https://docs.microsoft.com/en-us/azure/virtual-machines/windows/multiple-nics#configure-guest-os-for-multiple-nics), so need to assign a static route to the secondary NIC for it to communicate with resources outside of its subnet (e.g. with client VM and to respond to Azure Load Balancer probes)
 
 > NOTE: For testing, this configuration is not persistent across reboots.
 
 ```bash
-# Root
 sudo -i
 
 # Add route to client-subnet from secondary (internal) NIC eth1 instead of primary (external) NIC eth0
@@ -71,8 +70,8 @@ sudo tcpdump -p icmp -i eth0 -n
 
 ## Test Failover
 
-Restart one of the NAT VMs and confirm that client ping continues with small interruption of about ~10 seconds for health probe to detect VM is down (2 failed tests 5 seconds apart)
+Restart one of the NAT VMs and confirm that client ping continues with small interruption of about ~10 seconds for health probe to detect that VM is down (2 failed tests 5 seconds apart)
 
-The gap in pings from client VM during one of the NAT VM reboots looks like this
+The gap in pings from client VM during NAT VM reboot looks like this:
 
 ![Ping Gap](images/ping-gap.png)
